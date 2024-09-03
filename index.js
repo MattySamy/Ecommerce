@@ -109,9 +109,8 @@ async function startServer() {
     );
   });
 }
-
+module.exports = server;
 startServer();
-
 // Handle Rejections outside express
 // process.on("unhandledRejection", (err) => {
 //   console.log(`Error: ${err.message}`);
