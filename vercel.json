@@ -12,6 +12,7 @@
       "dest": "/index.js"
     }
   ],
+  "rewrites": [{ "source": "/(.*)", "destination": "/" }],
   "env": {
     "PORT": "5050",
     "BASE_URL": "http://localhost",
