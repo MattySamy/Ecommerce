@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.js"
+    }
+  ],
+  "env": {
+    "PORT": "5050",
+    "BASE_URL": "http://localhost",
+    "NODE_ENV": "prdouction",
+    "DB_USER": "mostafasamy",
+    "DB_PASSWORD": "2002",
+    "DB_NAME": "ecommerce",
+    "DB_URI": "mongodb+srv://mostafasamy:2002@cluster0.ws2xxnq.mongodb.net/ecommerce?retryWrites=true&w=majority",
+    "JWT_EXPIRES_IN": "5m",
+    "JWT_REFRESH_EXPIRES_IN": "1d",
+    "JWT_SECRET_KEY": "Mostafa@2002In2024is22yearsold",
+    "JWT_REFRESH_SECRET_KEY": "Mostafa@2002AndGraduatedAt2024Hooray!",
+    "EMAIL_HOST": "smtp.gmail.com",
+    "EMAIL_PORT": "465",
+    "EMAIL_USERNAME": "mostafasamysfsf7@gmail.com",
+    "EMAIL_PASSWORD": "xaqe eajz bpie clpq",
+    "STRIPE_SECRET": "sk_test_51Pug2KFMajBATM819n3yIsNrZeQ6Hr6EqpENwZzndSd3188BUTgJXFK8xCLlGwec3ihMOQXeG3MhqWBUakkyT16x00dvulrXBf"
+  }
+}
