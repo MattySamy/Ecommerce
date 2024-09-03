@@ -264,7 +264,7 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
   res.status(200).json({ status: "success", session, coupon });
 });
 
-const createCartOrder = async (session) => {
+const createCardOrder = async (session) => {
   const cartId = session.client_reference_id;
   const shippingAddress = session.metadata.shippingAddress
     ? JSON.parse(session.metadata.shippingAddress)
@@ -273,6 +273,7 @@ const createCartOrder = async (session) => {
   const cart = await CartModel.findOne({ _id: cartId });
   const user = await UserModel.findOne({ email: session.customer_email });
 
+  console.log(cartId, shippingAddress, orderPrice, cart, user);
   // TODO: 3) Create order with default paymentMethodType "cash"
   const order = await OrderModel.create({
     user: user._id,
@@ -329,7 +330,7 @@ exports.webhookCheckout = asyncHandler(async (req, res, next) => {
 
   if (event.type === "checkout.session.completed") {
     // Create Order
-    createCartOrder(event.data.object);
+    createCardOrder(event.data.object);
   }
 
   res.status(200).json({ received: true });
