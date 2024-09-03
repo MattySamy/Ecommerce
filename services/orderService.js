@@ -273,7 +273,6 @@ const createCardOrder = async (session) => {
   const cart = await CartModel.findOne({ _id: cartId });
   const user = await UserModel.findOne({ email: session.customer_email });
 
-  console.log(cartId, shippingAddress, orderPrice, cart, user);
   // TODO: 3) Create order with default paymentMethodType "cash"
   const order = await OrderModel.create({
     user: user._id,
