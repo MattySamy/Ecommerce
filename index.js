@@ -13,21 +13,9 @@ const compression = require("compression");
 const { ApiError } = require("./utils/errorHandler");
 const { globalErrorHandler } = require("./middlewares/error.middleware");
 const { mongoConnect } = require("./config/mongo");
+const mountRoutes = require("./routes/mountingRoutes");
 const { createAdmin } = require("./config/autoAdminCreation");
 const continousProductQuantityCheck = require("./config/continousProductQuantityCheck");
-
-const categoryRoute = require("./routes/categoryRoute");
-const subCategoryRoute = require("./routes/subCategoryRoute");
-const brandRoute = require("./routes/brandRoute");
-const productRoute = require("./routes/productRoute");
-const userRoute = require("./routes/userRoute");
-const authRoute = require("./routes/authRoute");
-const reviewRoute = require("./routes/reviewRoute");
-const wishlistRoute = require("./routes/wishlistRoute");
-const addressRoute = require("./routes/addressRoute");
-const couponRoute = require("./routes/couponRoute");
-const cartRoute = require("./routes/cartRoute");
-const orderRoute = require("./routes/orderRoute");
 
 // u named the file index.js so, u can just require the directory
 dotenv.config({ path: "./config.env" });
@@ -61,18 +49,7 @@ if (process.env.NODE_ENV === "development") {
 
 // Route Handler
 
-server.use("/api/v1/categories", categoryRoute.router);
-server.use("/api/v1/subcategories", subCategoryRoute.router);
-server.use("/api/v1/brands", brandRoute.router);
-server.use("/api/v1/products", productRoute.router);
-server.use("/api/v1/users", userRoute.router);
-server.use("/api/v1/auth", authRoute.router);
-server.use("/api/v1/reviews", reviewRoute.router);
-server.use("/api/v1/wishlist", wishlistRoute.router);
-server.use("/api/v1/addresses", addressRoute.router);
-server.use("/api/v1/coupons", couponRoute.router);
-server.use("/api/v1/cart", cartRoute.router);
-server.use("/api/v1/orders", orderRoute.router);
+mountRoutes(server);
 
 server.all("*", (req, res, next) => {
   // Create Error and send it to error handling middleware
