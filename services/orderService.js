@@ -202,9 +202,11 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
             name: item.product.title,
             description: item.product.description,
             images: [
-              item.product.imageCover.split(
-                `${req.protocol}://${req.get("host")}/products/`
-              )[1],
+              process.env.NODE_ENV === "production"
+                ? item.product.imageCover
+                : item.product.imageCover.split(
+                    `${req.protocol}://${req.get("host")}/products/`
+                  )[1],
             ],
           },
           unit_amount: item.product.price * 100,
