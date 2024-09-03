@@ -250,12 +250,19 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
     cancel_url: `${req.protocol}://${req.get("host")}/api/v1/cart`,
     customer_email: req.user.email,
     client_reference_id: req.params.cartId,
-    metadata: req.body.shippingAddress,
+    metadata: {
+      shippingAddress: JSON.stringify(req.body.shippingAddress),
+      shippingAddressDefault: JSON.stringify(req.user.addresses[0]),
+    },
   });
 
   // 5) Send session to response
   res.status(200).json({ status: "success", session, coupon });
 });
+
+const createCartOrder = async (session) => {
+  const cart = await CartModel.findOne({});
+};
 
 exports.webhookCheckout = asyncHandler(async (req, res, next) => {
   const sig = req.headers["stripe-signature"];
@@ -273,7 +280,9 @@ exports.webhookCheckout = asyncHandler(async (req, res, next) => {
   }
 
   if (event.type === "checkout.session.completed") {
-    console.log("Create Order here...");
-    console.log(event.data.object.client_reference_id);
+    // Create Order
+    createCartOrder(event.data.object);
   }
+
+  res.status(200).json({ received: true });
 });
