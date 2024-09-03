@@ -8,6 +8,8 @@ const OrderModel = require("../models/order.model");
 const CartModel = require("../models/cart.model");
 const ProductModel = require("../models/product.model");
 const CouponModel = require("../models/coupon.model");
+const UserModel = require("../models/user.model");
+
 // @desc Create cash order
 // @route POST /api/v1/orders/:cartId
 // @access Private (User)
@@ -36,6 +38,7 @@ exports.createCashOrder = asyncHandler(async (req, res, next) => {
     totalOrderPrice,
     shippingAddress: req.body.shippingAddress,
   });
+
   // TODO: 4) After creating order, decrement product quantity and increment product sold
   if (order) {
     const bulkOption = cart.cartItems.map((item) => ({
@@ -55,6 +58,7 @@ exports.createCashOrder = asyncHandler(async (req, res, next) => {
       writeConcern: { w: "majority" },
       ordered: false,
     }); // bulkWrite: Update many documents by various operations
+
     // TODO: 5) Clear cart
     await CartModel.findByIdAndDelete(req.params.cartId);
   }
@@ -261,7 +265,47 @@ exports.checkoutSession = asyncHandler(async (req, res, next) => {
 });
 
 const createCartOrder = async (session) => {
-  const cart = await CartModel.findOne({});
+  const cartId = session.client_reference_id;
+  const shippingAddress = session.metadata.shippingAddress
+    ? JSON.parse(session.metadata.shippingAddress)
+    : JSON.parse(session.metadata.shippingAddressDefault);
+  const orderPrice = session.amount_total / 100;
+  const cart = await CartModel.findOne({ _id: cartId });
+  const user = await UserModel.findOne({ email: session.customer_email });
+
+  // TODO: 3) Create order with default paymentMethodType "cash"
+  const order = await OrderModel.create({
+    user: user._id,
+    cartItems: cart.cartItems,
+    shippingAddress,
+    totalOrderPrice: orderPrice,
+    isPaid: true,
+    paymentMethodType: "card",
+    paidAt: Date.now(),
+  });
+
+  if (order) {
+    const bulkOption = cart.cartItems.map((item) => ({
+      updateOne: {
+        filter: {
+          _id: item.product,
+        },
+        update: {
+          $inc: {
+            quantity: -item.quantity,
+            sold: +item.quantity,
+          },
+        },
+      },
+    }));
+    await ProductModel.bulkWrite(bulkOption, {
+      writeConcern: { w: "majority" },
+      ordered: false,
+    }); // bulkWrite: Update many documents by various operations
+
+    // TODO: 5) Clear cart
+    await CartModel.findByIdAndDelete(cartId);
+  }
 };
 
 exports.webhookCheckout = asyncHandler(async (req, res, next) => {
