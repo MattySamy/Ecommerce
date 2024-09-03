@@ -308,6 +308,10 @@ const createCartOrder = async (session) => {
   }
 };
 
+// @desc This webhook will be triggered when a payment succeeds paid
+// @route POST /webhook-checkout
+// @access Private(User)
+
 exports.webhookCheckout = asyncHandler(async (req, res, next) => {
   const sig = req.headers["stripe-signature"];
 
