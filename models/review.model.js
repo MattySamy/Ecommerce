@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const ProductModel = require("./product.model");
 
 const reviewSchema = mongoose.Schema(
   {
@@ -16,6 +17,8 @@ const reviewSchema = mongoose.Schema(
       ref: "User",
       required: [true, "Review must belong to a user"],
     },
+
+    // parent refrence (one to many)
     product: {
       type: mongoose.Schema.ObjectId,
       ref: "Product",
@@ -31,6 +34,49 @@ reviewSchema.pre(/^find/, function (next) {
     select: "name email",
   });
   next();
+});
+
+// Important: Static Method
+reviewSchema.statics.calcAverageRatingsAndQuantity = async function (
+  productId
+) {
+  const stats = await this.aggregate([
+    // Stage 1: Get all reviews of specific product
+    {
+      $match: {
+        product: productId,
+      },
+    },
+
+    // Stage 2: Group them by product id
+    {
+      $group: {
+        _id: "$product",
+        avgRatings: { $avg: "$ratings" },
+        ratingsQuantity: { $sum: 1 }, // 1 => counter of ratings
+      },
+    },
+  ]);
+  // console.log(stats);
+  if (stats.length > 0) {
+    await ProductModel.findByIdAndUpdate(productId, {
+      ratingsQuantity: stats[0].ratingsQuantity,
+      ratingsAverage: stats[0].avgRatings.toFixed(1),
+    });
+  } else {
+    await ProductModel.findByIdAndUpdate(productId, {
+      ratingsQuantity: 0,
+      ratingsAverage: 0,
+    });
+  }
+};
+
+reviewSchema.post("save", async function () {
+  await this.constructor.calcAverageRatingsAndQuantity(this.product);
+});
+
+reviewSchema.post("remove", async function () {
+  await this.constructor.calcAverageRatingsAndQuantity(this.product);
 });
 
 module.exports = mongoose.model("Review", reviewSchema);

@@ -4,6 +4,28 @@
 const ReviewModel = require("../models/review.model");
 const factory = require("./handlers.factory");
 
+// Middleware to set category id to body => make it before enters validation layer of express-validator
+exports.setProductIdParamAndAuthenticatedUserIdToBody = (req, res, next) => {
+  if (!req.body.product) req.body.product = req.params.productId;
+  if (!req.body.user) req.body.user = req.user._id;
+  next();
+};
+
+// Imporatnt: Nested route
+// @desc Get all Reviews from a specific product
+// @route GET /api/v1/products/:id/reviews
+// @access Public
+//---------------------------------------------------------------------------
+
+exports.createFilterObject = (req, res, next) => {
+  let filterObject = {};
+  if (req.params.productId) {
+    filterObject = { product: req.params.productId };
+  }
+  req.filterObj = filterObject;
+  next();
+};
+
 // @desc Get all reviews
 // @route GET /api/v1/reviews
 // @access Public

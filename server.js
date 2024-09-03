@@ -7,23 +7,31 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cookieparser = require("cookie-parser");
 const morgan = require("morgan");
+const cors = require("cors");
+const compression = require("compression");
 
 const { ApiError } = require("./utils/errorHandler");
 const { globalErrorHandler } = require("./middlewares/error.middleware");
 const { mongoConnect } = require("./config/mongo");
-const categoryRoute = require("./routes/categoryRoute");
-const subCategoryRoute = require("./routes/subCategoryRoute");
-const brandRoute = require("./routes/brandRoute");
-const productRoute = require("./routes/productRoute");
-const userRoute = require("./routes/userRoute");
-const authRoute = require("./routes/authRoute");
-const reviewRoute = require("./routes/reviewRoute");
-
+const { createAdmin } = require("./config/autoAdminCreation");
+const continousProductQuantityCheck = require("./config/continousProductQuantityCheck");
+const mountRoutes = require("./routes");
+// u named the file index.js so, u can just require the directory
 dotenv.config({ path: "./config.env" });
 const server = express();
 const PORT = process.env.PORT || 8000;
 
 // Middlewares
+server.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+// Compress all responses
+server.use(compression());
+
 server.use(express.json()); // for parsing application/json body becuz it's encoded string
 
 server.use(express.urlencoded({ extended: false }));
@@ -38,14 +46,9 @@ if (process.env.NODE_ENV === "development") {
   console.log(`node: ${process.env.NODE_ENV}`);
 }
 
-// Routes
-server.use("/api/v1/categories", categoryRoute.router);
-server.use("/api/v1/subcategories", subCategoryRoute.router);
-server.use("/api/v1/brands", brandRoute.router);
-server.use("/api/v1/products", productRoute.router);
-server.use("/api/v1/users", userRoute.router);
-server.use("/api/v1/auth", authRoute.router);
-server.use("/api/v1/reviews", reviewRoute.router);
+// Route Handler
+
+mountRoutes(server);
 
 server.all("*", (req, res, next) => {
   // Create Error and send it to error handling middleware
@@ -74,8 +77,12 @@ async function startServer() {
       console.error("Database connection error: ", err);
       process.exit(1);
     });
+  await createAdmin();
+  await continousProductQuantityCheck();
   server.listen(PORT, () => {
-    console.log(`Server started on port ${PORT} on http://localhost:${PORT}`);
+    console.log(
+      `Server started on port ${PORT} on http://localhost:${PORT}/api/v1`
+    );
   });
 }
 

@@ -14,6 +14,9 @@ exports.deleteOne = (Model) =>
         new ApiError(`${Model.modelName} not found for id: ${id}`, 404)
       );
     }
+
+    // Trigger "remove" event launched by mongoose middleware
+    model.remove();
     res.status(204).json({ msg: "Brand deleted successfully" });
   });
 
@@ -97,6 +100,10 @@ exports.updateOne = (Model, imageFieldName = "", saveDirName = "") =>
         )
       );
     }
+
+    // Trigger for "save" event
+    model.save();
+
     res.status(200).json({ data: model });
   });
 
@@ -110,8 +117,8 @@ exports.getOne = (Model, populateOptions = null) =>
   asyncHandler(async (req, res, next) => {
     const { id } = req.params;
 
-    // Build Query
-    let model = Model.findById(id);
+    let model = Model.findOne({ _id: id, user: req.user._id || undefined });
+
     if (populateOptions) {
       model = model.populate(populateOptions);
     }

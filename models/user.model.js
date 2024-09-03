@@ -60,16 +60,30 @@ const userSchema = mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    // // Embedded documents
 
-    // addresses: [{
-    //     title: String,
-    //     address: String,
-    //     city: String,
-    //     state: String,
-    //     country: String,
-    //     pincode: String
-    // }],
+    //child refrence to product (one to many)
+    wishList: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: "Product",
+        unique: [true, "Product already in wishlist !!"],
+      },
+    ],
+
+    // Embedded documents
+
+    addresses: [
+      {
+        id: {
+          type: mongoose.Schema.Types.ObjectId,
+        },
+        alias: String,
+        details: String,
+        city: String,
+        phone: String,
+        postalCode: String,
+      },
+    ],
   },
   { timestamps: true }
 );

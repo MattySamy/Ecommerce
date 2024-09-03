@@ -1,0 +1,30 @@
+{
+  "sqltools.connections": [
+    {
+      "mysqlOptions": {
+        "authProtocol": "default",
+        "enableSsl": "Disabled"
+      },
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 3306,
+      "driver": "MySQL",
+      "name": "MySQL",
+      "group": "mysql",
+      "database": "mysql",
+      "username": "root",
+      "password": ""
+    },
+    {
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 5432,
+      "driver": "PostgreSQL",
+      "name": "PostgresSQL 16",
+      "group": "postgres",
+      "database": "testDB",
+      "username": "postgres",
+      "password": "Mostafa@2002"
+    }
+  ]
+}

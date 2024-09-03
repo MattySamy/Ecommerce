@@ -2,6 +2,7 @@ const { check } = require("express-validator");
 
 const validatorMiddleware = require("../../middlewares/validator.middleware");
 const Review = require("../../models/review.model");
+// const UserModel = require("../../models/user.model");
 
 exports.createReviewValidator = [
   check("title").optional(),
@@ -10,7 +11,20 @@ exports.createReviewValidator = [
     .withMessage("ratings value required")
     .isFloat({ min: 1, max: 5 })
     .withMessage("Ratings value must be between 1 to 5"),
-  check("user").isMongoId().withMessage("Invalid Review id format"),
+  check("user")
+    .isMongoId()
+    .withMessage("Invalid Review id format")
+    .custom(async (val, { req }) => {
+      if (val) {
+        if (val.toString() !== req.user._id.toString()) {
+          throw new Error(
+            `Your are not allowed to perform this action of adding review for another user (not authenticated) for id: ${val}`
+          );
+        }
+      }
+
+      return true;
+    }),
   check("product")
     .isMongoId()
     .withMessage("Invalid Review id format")

@@ -13,12 +13,12 @@ const sendErrorForProd = (err, res) =>
     "Error Status": err.status,
     "Error Message": err.message,
   });
-
 const handleJWTInvalidSignature = () =>
   new ApiError("Invalid token, please login again ...", 401);
 
 const handleJWTExpired = () =>
   new ApiError("JWT is expired, Try Login again, please !!", 401);
+
 exports.globalErrorHandler = async (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || "error";

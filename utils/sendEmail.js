@@ -16,7 +16,7 @@ const sendEmail = async (options) => {
   // 2) Define email options (what you want to send like from, to, subject, email body)
 
   const mailOptions = {
-    from: `Shoppily App <${process.env.EMAIL_USERNAME}>`,
+    from: `Shopilly App <${process.env.EMAIL_USERNAME}>`,
     to: options.email,
     subject: options.subject,
     text: options.message,

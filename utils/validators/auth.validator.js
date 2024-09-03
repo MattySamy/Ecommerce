@@ -62,30 +62,7 @@ exports.signUpValidator = [
 ];
 
 exports.logInValidator = [
-  check("email")
-    .notEmpty()
-    .withMessage("User email is required !!")
-    .isEmail({
-      host_whitelist: ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com"],
-    })
-    .withMessage(
-      "Invalid email format, Only Gmail, Yahoo, Outlook and Hotmail emails are allowed !!"
-    ),
-  check("password")
-    .notEmpty()
-    .withMessage("User password is required !!")
-    .isStrongPassword({
-      minLength: 6,
-      minLowercase: 1,
-      minUppercase: 1,
-      minNumbers: 3,
-      minSymbols: 1,
-    })
-    .withMessage(
-      "Password is too week and should be at least 6 characters consists of uppercase, lowercase, numbers and symbols !!"
-    )
-    .isLength({ min: 6 })
-    .withMessage("Too short User password !!"),
-
+  check("email").notEmpty().withMessage("User email is required !!"),
+  check("password").notEmpty().withMessage("User password is required !!"),
   validatorMiddleware,
 ];

@@ -12,7 +12,11 @@ const {
 
 const AuthorizedService = require("../services/authService");
 
+const reviewRoute = require("./reviewRoute");
+
 const router = express.Router();
+
+router.use("/:productId/reviews", reviewRoute.router);
 
 router
   .route("/")

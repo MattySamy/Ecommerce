@@ -27,6 +27,15 @@ const productSchema = mongoose.Schema(
       type: Number,
       required: [true, "Product Quantity is required"],
     },
+    isOutOfStock: {
+      type: Boolean,
+      default: false,
+    },
+    removeProductsThatAreOutOfStock: {
+      type: Boolean,
+      default: true,
+      required: true,
+    },
     sold: {
       type: Number,
       default: 0,
@@ -95,6 +104,14 @@ productSchema.virtual("reviews", {
   ref: "Review",
   localField: "_id",
   foreignField: "product",
+});
+
+productSchema.pre("save", function (next) {
+  if (this.quantity <= 0 || this.sold < 0) {
+    this.isOutOfStock = true;
+  }
+
+  next();
 });
 
 // Mongoose Query Middleware

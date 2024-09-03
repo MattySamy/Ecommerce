@@ -1,5 +1,7 @@
 const fs = require("fs");
+const path = require("path");
 // eslint-disable-next-line import/no-extraneous-dependencies
+
 require("colors");
 const dotenv = require("dotenv");
 const ProductModel = require("../../models/product.model");
@@ -11,7 +13,9 @@ dotenv.config({ path: "../../config.env" });
 mongoConnect(process.env.DB_URI);
 
 // Read data
-const products = JSON.parse(fs.readFileSync("./products.json"));
+const products = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "products.json"))
+);
 
 // Insert data into DB
 const insertData = async () => {

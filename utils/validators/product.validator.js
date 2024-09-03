@@ -126,6 +126,9 @@ exports.createProductValidator = [
         }
       )
     ),
+  check("removeProductsThatAreOutOfStock")
+    .notEmpty()
+    .withMessage("Remove products that are out of stock flag is required !!"),
   check("brand")
     .optional()
     .isMongoId()
