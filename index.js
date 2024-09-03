@@ -17,6 +17,8 @@ const mountRoutes = require("./routes/mountingRoutes");
 const { createAdmin } = require("./config/autoAdminCreation");
 const continousProductQuantityCheck = require("./config/continousProductQuantityCheck");
 
+const { webhookCheckout } = require("./services/orderService");
+
 // u named the file index.js so, u can just require the directory
 dotenv.config({ path: "./config.env" });
 const server = express();
@@ -32,6 +34,14 @@ server.use(
 );
 // Compress all responses
 server.use(compression());
+
+// Checkout Webhook
+
+server.post(
+  "/webhook-checkout",
+  express.raw({ type: "application/json" }),
+  webhookCheckout
+);
 
 server.use(express.json()); // for parsing application/json body becuz it's encoded string
 
