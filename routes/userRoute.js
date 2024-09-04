@@ -1,4 +1,6 @@
 const express = require("express");
+
+const { changePasswordLimiter } = require("../config/requestLimiter");
 const userValidator = require("../utils/validators/user.validator");
 const {
   getUsers,
@@ -71,6 +73,7 @@ router
 
 router.put(
   "/changePassword/:id",
+  changePasswordLimiter,
   ...userValidator.changeUserPasswordValidator,
   changeUserPassword
 );

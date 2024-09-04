@@ -6,10 +6,15 @@ const asyncHandler = require("express-async-handler");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
+const Tokens = require("csrf");
+const csrfTokens = new Tokens();
+
 const { ApiError } = require("../utils/errorHandler");
 const UserModel = require("../models/user.model");
+const TokenModel = require("../models/token.model");
 const { generateToken } = require("../utils/generateToken");
 const sendEmail = require("../utils/sendEmail");
+const { sanitizeUser } = require("../utils/sanitizeData");
 
 // @desc Sign Up
 // @route POST /api/v1/auth/signup
@@ -17,39 +22,48 @@ const sendEmail = require("../utils/sendEmail");
 
 exports.signUp = asyncHandler(async (req, res, next) => {
   // 1) Create user
-  const user = await UserModel.create({
+  let user = UserModel.create({
     name: req.body.name,
     email: req.body.email,
     password: req.body.password,
   });
-  // 2) Generate token => jwt.sign(payload,secretKey,options:{expiresIn})
-  const token = generateToken(user._id);
-  // 3) Creating refresh token not that expiry of refresh
-  //token is greater than the access token
+  user = await user;
 
-  const refreshToken = jwt.sign(
-    {
-      userId: user._id,
-    },
-    process.env.JWT_REFRESH_SECRET_KEY,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN }
-  );
-
-  // 4) Assigning refresh token in http-only cookie
-  res.cookie("jwt", refreshToken, {
-    httpOnly: true,
-    sameSite: "None",
-    secure: true,
-    maxAge: 24 * 60 * 60 * 1000,
+  let EmailToken = await TokenModel.create({
+    userId: user._id,
+    token: crypto.randomBytes(32).toString("hex"),
   });
 
+  const message = `
+<div style="font-family: 'Pacifico', cursive;">
+<p style="text-align: center;">Hi ${
+    user.name
+  }, Please click here to verify your account <a href="https://ecommerce-snowy-delta.vercel.app/api/v1/auth/verify/${
+    (await user)._id
+  }/${EmailToken.token}">Click here 🔗</a></p>
+<div style="font-family: 'Pacifico', cursive; text-align: center;">
+Note that your <span style="font-weight:bold;font-size: 18px;">Username</span>: <h1 style="color: red;">${
+    user.name
+  }</h1> your <span style="font-weight:bold;font-size: 18px;">Email</span> is <h1 style="color: red;">${
+    user.email
+  }</h1>
+If you want to Log In, You can use your username or email mentioned above.
+</div>`;
+
+  try {
+    await sendEmail({
+      email: (await user).email,
+      subject: "Email Verification",
+      html: message,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+
   // 5) Send response
-  res.status(201).json({
+  res.status(200).json({
     status: "success",
-    token,
-    data: {
-      user,
-    },
+    msg: "An email sent to your email address to verify your account",
   });
 });
 
@@ -60,9 +74,16 @@ exports.signUp = asyncHandler(async (req, res, next) => {
 exports.login = asyncHandler(async (req, res, next) => {
   // 1) check if password and email in the body (validation)
   // 2) check if user exists & check if password is correct
-  const user = await UserModel.findOne({ email: req.body.email });
+  const user = await UserModel.findOne({
+    $or: [{ email: req.body.email }, { name: req.body.email }],
+  });
   if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
-    return next(new ApiError("Incorrect Email or Password !!", 401));
+    return next(
+      new ApiError(
+        "Incorrect Email or Password, Note that if you forgot your Email => you can just return to your verified email we've sent to you and you will find it or you can just use your email instead :)",
+        401
+      )
+    );
   }
   // 3) generate token
   const token = generateToken(user._id);
@@ -80,8 +101,7 @@ exports.login = asyncHandler(async (req, res, next) => {
 
   // 5) Assigning refresh token in http-only cookie
   res.cookie("jwt", refreshToken, {
-    httpOnly: true,
-    sameSite: "None",
+    httpOnly: false,
     secure: true,
     maxAge: 24 * 60 * 60 * 1000,
   });
@@ -90,7 +110,7 @@ exports.login = asyncHandler(async (req, res, next) => {
   res.status(201).json({
     "Welcome Message": `Welcome back, ${user.name}`,
     "JWT Token": token,
-    "Your Data": user,
+    "Your Data": sanitizeUser(user),
   });
 });
 
@@ -101,8 +121,22 @@ exports.authProtect = asyncHandler(async (req, res, next) => {
   // console.log(req.headers);
   let token;
   if (
+    !csrfTokens.verify(
+      req.headers["X-CSRF-Token"].split("#SECRETIS=>")[1],
+      req.headers["X-CSRF-Token"].split("#SECRETIS=>")[0]
+    )
+  ) {
+    return next(
+      new ApiError(
+        `CSRF Token is not valid for this request : ${req.originalUrl} !!`,
+        403
+      )
+    );
+  }
+  if (
     req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
+    req.headers.authorization.startsWith("Bearer") &&
+    req.headers["X-CSRF-Token"]
   ) {
     token = req.headers.authorization.split(" ")[1];
   }
@@ -130,6 +164,15 @@ exports.authProtect = asyncHandler(async (req, res, next) => {
       new ApiError(
         `User is deactivated, please contact us from <${process.env.EMAIL_USERNAME}> for activation details :'(`,
         401
+      )
+    );
+  }
+
+  if (currentUser.verified === false) {
+    return next(
+      new ApiError(
+        `Your account is not verified, please verify your account first to access this route : ${req.method} ${req.protocol}://${req.get("host")}/${req.originalUrl} !!`,
+        403
       )
     );
   }
@@ -179,6 +222,19 @@ exports.allowedTo = (...roles) =>
 // @route GET /api/v1/auth/refresh
 // @access Private
 exports.refresh = asyncHandler(async (req, res, next) => {
+  if (
+    !csrfTokens.verify(
+      req.headers["X-CSRF-Token"].split("#SECRETIS=>")[1],
+      req.headers["X-CSRF-Token"].split("#SECRETIS=>")[0]
+    )
+  ) {
+    return next(
+      new ApiError(
+        `CSRF Token is not valid for this request : ${req.originalUrl} !!`,
+        403
+      )
+    );
+  }
   if (req.cookies?.jwt) {
     // Destructuring refreshToken from cookie
     const refreshToken = req.cookies.jwt;
@@ -387,5 +443,34 @@ exports.logout = asyncHandler(async (req, res, next) => {
   res.status(201).json({
     status: "You have been logged out successfully :)",
     "New Expired JWT Token": req.token,
+  });
+});
+
+// @desc Verify Email
+// @route GET /api/v1/auth/verify/:id/:token
+// @access Private (User)
+
+exports.verifyEmail = asyncHandler(async (req, res, next) => {
+  const user = await UserModel.findOne({ _id: req.params.id });
+  if (!user) return next(new ApiError("Invalid user", 400));
+
+  const token = await TokenModel.findOne({
+    userId: user._id,
+    token: req.params.token,
+  });
+  if (!token) return next(new ApiError("Invalid token", 400));
+
+  await UserModel.findByIdAndUpdate(
+    user._id,
+    { verified: true },
+    {
+      new: true,
+    }
+  );
+  await TokenModel.findByIdAndDelete(token._id);
+
+  res.status(200).json({
+    status: "success",
+    msg: "Email has been verified successfully :)",
   });
 });

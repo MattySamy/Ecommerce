@@ -1,4 +1,6 @@
 const express = require("express");
+const { cartLimiter } = require("../config/requestLimiter");
+
 const {
   addProductToCart,
   getLoggedUserCart,
@@ -12,7 +14,11 @@ const AuthorizedService = require("../services/authService");
 
 const router = express.Router();
 
-router.use(AuthorizedService.authProtect, AuthorizedService.allowedTo("user"));
+router.use(
+  cartLimiter,
+  AuthorizedService.authProtect,
+  AuthorizedService.allowedTo("user")
+);
 
 router
   .route("/")

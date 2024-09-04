@@ -1,4 +1,5 @@
 const express = require("express");
+const { productLimiter } = require("../config/requestLimiter");
 const productValidator = require("../utils/validators/product.validator");
 const {
   getProducts,
@@ -15,6 +16,8 @@ const AuthorizedService = require("../services/authService");
 const reviewRoute = require("./reviewRoute");
 
 const router = express.Router();
+
+router.use(productLimiter);
 
 router.use("/:productId/reviews", reviewRoute.router);
 

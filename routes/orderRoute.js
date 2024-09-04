@@ -1,4 +1,6 @@
 const express = require("express");
+const { orderLimiter } = require("../config/requestLimiter");
+
 const {
   createCashOrder,
   getAllOrders,
@@ -13,7 +15,7 @@ const AuthorizedService = require("../services/authService");
 
 const router = express.Router();
 
-router.use(AuthorizedService.authProtect);
+router.use(orderLimiter, AuthorizedService.authProtect);
 
 router
   .route("/:cartId")

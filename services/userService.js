@@ -118,6 +118,19 @@ exports.changeUserPassword = asyncHandler(async (req, res, next) => {
       : modelExists.password,
     passwordChangedAt: Date.now(),
   });
+
+  if (req.cookies.jwt) {
+    // Destructuring refreshToken from cookie
+    // const refreshToken = req.cookies.jwt;
+
+    // Deleting refreshToken from cookie
+    res.clearCookie("jwt", {
+      httpOnly: false,
+      sameSite: "none",
+      secure: true,
+    });
+  }
+
   if (!model) {
     return next(
       new ApiError(

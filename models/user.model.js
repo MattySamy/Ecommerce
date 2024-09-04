@@ -40,6 +40,10 @@ const userSchema = mongoose.Schema(
     passwordResetVerifiedMode: Boolean,
     passwordResetCode: String,
     passwordResetExpires: Date,
+    verified: {
+      type: Boolean,
+      default: false,
+    },
     // Not Required in schema
     // passwordConfirm: {
     //   type: String,

@@ -63,6 +63,10 @@ exports.signUpValidator = [
 
 exports.logInValidator = [
   check("email").notEmpty().withMessage("User email is required !!"),
-  check("password").notEmpty().withMessage("User password is required !!"),
+  check("password")
+    .notEmpty()
+    .withMessage("User password is required !!")
+    .isLength({ min: 6 })
+    .withMessage("Too short User password !!"),
   validatorMiddleware,
 ];

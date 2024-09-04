@@ -8,7 +8,16 @@ const dotenv = require("dotenv");
 const cookieparser = require("cookie-parser");
 const morgan = require("morgan");
 const cors = require("cors");
+const hpp = require("hpp");
+const xss = require("xss-clean");
+const mongoSanitize = require("express-mongo-sanitize");
 const compression = require("compression");
+// CSRF
+const Tokens = require("csrf");
+
+const csrfTokens = new Tokens();
+const secret = csrfTokens.secretSync();
+const csrfToken = csrfTokens.create(secret);
 
 const { ApiError } = require("./utils/errorHandler");
 const { globalErrorHandler } = require("./middlewares/error.middleware");
@@ -35,6 +44,11 @@ server.use(
 // Compress all responses
 server.use(compression());
 
+server.use((req, res, next) => {
+  req.headers["X-CSRF-Token"] = `${csrfToken}#SECRETIS=>${secret}`;
+  next();
+});
+
 // Checkout Webhook
 
 server.post(
@@ -43,7 +57,11 @@ server.post(
   webhookCheckout
 );
 
-server.use(express.json()); // for parsing application/json body becuz it's encoded string
+server.use(
+  express.json({
+    limit: "20kb",
+  })
+); // for parsing application/json body becuz it's encoded string
 
 server.use(express.urlencoded({ extended: false }));
 server.use(cookieparser());
@@ -57,8 +75,40 @@ if (process.env.NODE_ENV === "development") {
   console.log(`node: ${process.env.NODE_ENV}`);
 }
 
-// Route Handler
+// To apply Data Sanitization to prevent NoSQL Injection
+server.use(
+  mongoSanitize({
+    replaceWith: "_",
+  })
+);
+server.use(xss());
 
+// Global Request Limiter
+// const requestLimiter = require("./config/requestLimiter");
+
+// const reqLimiter = requestLimiter({
+//   max: 100,
+//   windowMs: 60 * 60 * 1000,
+//   message: "Too many requests from this IP, please try again in an hour!",
+// });
+
+// server.use(reqLimiter);
+
+// Prevent parameter pollution (take last duplicate value of parameter)
+// Whitelist is a list of parameters that we want to allows
+server.use(
+  hpp({
+    whitelist: [
+      "price",
+      "quantity",
+      "sold",
+      "ratingsAverage",
+      "ratingsQuantity",
+    ],
+  })
+);
+
+// Route Handler
 mountRoutes(server);
 
 server.all("*", (req, res, next) => {
