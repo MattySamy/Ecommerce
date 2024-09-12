@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
 const Tokens = require("csrf");
+
 const csrfTokens = new Tokens();
 
 const { ApiError } = require("../utils/errorHandler");
@@ -29,7 +30,7 @@ exports.signUp = asyncHandler(async (req, res, next) => {
   });
   user = await user;
 
-  let EmailToken = await TokenModel.create({
+  const EmailToken = await TokenModel.create({
     userId: user._id,
     token: crypto.randomBytes(32).toString("hex"),
   });
@@ -235,9 +236,9 @@ exports.refresh = asyncHandler(async (req, res, next) => {
       )
     );
   }
-  if (req.cookies?.jwt) {
+  if (req.cookies.jwt || req.body.refreshToken) {
     // Destructuring refreshToken from cookie
-    const refreshToken = req.cookies.jwt;
+    const refreshToken = req.cookies.jwt || req.body.refreshToken;
 
     // Verifying refresh token
     jwt.verify(
@@ -249,28 +250,25 @@ exports.refresh = asyncHandler(async (req, res, next) => {
           return next(
             new ApiError("Unauthorized, Please Login Again to refresh !!", 401)
           );
-        } else {
-          const user = UserModel.findById(decoded.userId);
-          if (!user) {
-            return next(
-              new ApiError("Unauthorized, Please Login Again !!", 401)
-            );
-          }
-          // Correct token we send a new access token
-          const accessToken = jwt.sign(
-            {
-              userId: decoded.userId,
-            },
-            process.env.JWT_SECRET_KEY,
-            {
-              expiresIn: process.env.JWT_EXPIRES_IN,
-            }
-          );
-
-          return res.status(200).json({
-            "New Access Token": accessToken,
-          });
         }
+        const user = UserModel.findById(decoded.userId);
+        if (!user) {
+          return next(new ApiError("Unauthorized, Please Login Again !!", 401));
+        }
+        // Correct token we send a new access token
+        const accessToken = jwt.sign(
+          {
+            userId: decoded.userId,
+          },
+          process.env.JWT_SECRET_KEY,
+          {
+            expiresIn: process.env.JWT_EXPIRES_IN,
+          }
+        );
+
+        return res.status(200).json({
+          "New Access Token": accessToken,
+        });
       }
     );
   } else {
@@ -424,10 +422,10 @@ exports.logout = asyncHandler(async (req, res, next) => {
   });
 
   // Destroy Cookie of Refresh Token (Refresh Token)
-  const cookies = req.cookies;
+  const { cookies } = req;
 
   // const authHeader = req.header("Authorization");
-  const refreshToken = cookies?.jwt;
+  const refreshToken = cookies.jwt;
   if (!refreshToken) {
     return next(
       new ApiError("Refresh token is not available in cookies :'(", 404)

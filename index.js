@@ -5,7 +5,7 @@ const path = require("path");
 // 3rd party packages
 const express = require("express");
 const dotenv = require("dotenv");
-const cookieparser = require("cookie-parser");
+const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
 const cors = require("cors");
 const hpp = require("hpp");
@@ -64,7 +64,7 @@ server.use(
 ); // for parsing application/json body becuz it's encoded string
 
 server.use(express.urlencoded({ extended: false }));
-server.use(cookieparser());
+server.use(cookieParser());
 
 // Serving static images from uploads directory
 // to get amn image => ex: http://localhost:5050/<module_name>/<image_name.extention>
